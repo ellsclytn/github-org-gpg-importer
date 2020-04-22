@@ -12,7 +12,7 @@ github_request () {
   curl -su "$github_username:$github_token" "https://api.github.com/$1"
 }
 
-members=$(github_request "orgs/$github_org/members")
+members=$(github_request "orgs/$github_org/members?per_page=100")
 users=$(echo "$members" | jq -r '.[].login')
 
 for user in $users; do
