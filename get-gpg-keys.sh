@@ -15,6 +15,8 @@ github_request () {
 members=$(github_request "orgs/$github_org/members?per_page=100")
 users=$(echo "$members" | jq -r '.[].login')
 
+mkdir -p "keys"
+
 for user in $users; do
   user_key_response=$(github_request "users/$user/gpg_keys")
   raw_key="$(echo "$user_key_response" | jq -r '.[0].raw_key')"
