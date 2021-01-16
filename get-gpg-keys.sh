@@ -1,10 +1,57 @@
 #!/bin/bash
 set -euo pipefail
 
+github_token_path=access-token.key
+
+# https://gist.github.com/davejamesmiller/1965569
+ask() {
+  local prompt default reply
+
+  if [[ ${2:-} = 'Y' ]]; then
+    prompt='Y/n'
+    default='Y'
+  elif [[ ${2:-} = 'N' ]]; then
+    prompt='y/N'
+    default='N'
+  else
+    prompt='y/n'
+    default=''
+  fi
+
+  while true; do
+    # Ask the question (not using "read -p" as it uses stderr not stdout)
+    echo -n "$1 [$prompt] "
+
+    # Read the answer (use /dev/tty in case stdin is redirected from somewhere else)
+    read -r reply </dev/tty
+
+    # Default?
+    if [[ -z $reply ]]; then
+      reply=$default
+    fi
+
+    # Check if the reply is valid
+    case "$reply" in
+      Y*|y*) return 0 ;;
+      N*|n*) return 1 ;;
+    esac
+  done
+}
+
 echo "Enter your GitHub username"
 read -r github_username
-echo "Enter your GitHub Access Token (read:org scope required)"
-read -r github_token
+
+if [[ -f "$github_token_path" ]]; then
+  github_token="$(cat "$github_token_path")"
+else
+  echo "Enter your GitHub Access Token (read:org scope required)"
+  read -r github_token
+
+  if ask "Do you want this token saved for future use?" Y; then
+    echo "$github_token" > "$github_token_path"
+  fi
+fi
+
 echo "Enter the GitHub organisation slug (as it appears in URLs)"
 read -r github_org
 
