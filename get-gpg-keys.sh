@@ -2,6 +2,7 @@
 set -euo pipefail
 
 github_token_path=access-token.key
+github_username_path=username.txt
 
 # https://gist.github.com/davejamesmiller/1965569
 ask() {
@@ -38,8 +39,16 @@ ask() {
   done
 }
 
-echo "Enter your GitHub username"
-read -r github_username
+if [[ -f "$github_username_path" ]]; then
+  github_username="$(cat "$github_username_path")"
+else
+  echo "Enter your GitHub username"
+  read -r github_username
+
+  if ask "Do you want this username saved for future use?" Y; then
+    echo "$github_username" > "$github_username_path"
+  fi
+fi
 
 if [[ -f "$github_token_path" ]]; then
   github_token="$(cat "$github_token_path")"
