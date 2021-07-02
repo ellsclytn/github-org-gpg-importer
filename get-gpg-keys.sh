@@ -61,26 +61,29 @@ else
   fi
 fi
 
-echo "Enter the GitHub organisation slug (as it appears in URLs)"
-read -r github_org
-
 github_request () {
   curl -su "$github_username:$github_token" "https://api.github.com/$1"
 }
 
-members=$(github_request "orgs/$github_org/members?per_page=100")
-users=$(echo "$members" | jq -r '.[].login')
+github_orgs_json=$(github_request "user/memberships/orgs")
+github_orgs=$(echo "$github_orgs_json" | jq -r '.[].organization.login')
 
-mkdir -p "keys"
+for github_org in $github_orgs; do
+  echo "Importing $github_org users"
+  members=$(github_request "orgs/$github_org/members?per_page=100")
+  users=$(echo "$members" | jq -r '.[].login')
 
-for user in $users; do
-  user_key_response=$(github_request "users/$user/gpg_keys")
-  raw_key="$(echo "$user_key_response" | jq -r '.[0].raw_key')"
+  mkdir -p "keys"
 
-  if [[ "$raw_key" != "null" ]]; then
-    # I don't know. GitHub gives annoying \r\n stuff and it's annoying.
-    # Did I mention it's annoying? It's annoying.
-    echo "$user_key_response" | jq -r '.[0].raw_key' > "keys/$user.pub"
-    gpg --import "keys/$user.pub"
-  fi
+  for user in $users; do
+    user_key_response=$(github_request "users/$user/gpg_keys")
+    raw_key="$(echo "$user_key_response" | jq -r '.[0].raw_key')"
+
+    if [[ "$raw_key" != "null" ]]; then
+      # I don't know. GitHub gives annoying \r\n stuff and it's annoying.
+      # Did I mention it's annoying? It's annoying.
+      echo "$user_key_response" | jq -r '.[0].raw_key' > "keys/$user.pub"
+      gpg --import "keys/$user.pub"
+    fi
+  done
 done
