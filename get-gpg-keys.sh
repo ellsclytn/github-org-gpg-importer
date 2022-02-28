@@ -77,13 +77,18 @@ for github_org in $github_orgs; do
 
   for user in $users; do
     user_key_response=$(github_request "users/$user/gpg_keys")
-    raw_key="$(echo "$user_key_response" | jq -r '.[0].raw_key')"
+    key_count="$(echo "$user_key_response" | jq length)"
 
-    if [[ "$raw_key" != "null" ]]; then
-      # I don't know. GitHub gives annoying \r\n stuff and it's annoying.
-      # Did I mention it's annoying? It's annoying.
-      echo "$user_key_response" | jq -r '.[0].raw_key' > "keys/$user.pub"
-      gpg --import "keys/$user.pub"
-    fi
+    for ((i=0; i<$key_count; i++)); do
+      echo "Importing $user key $i"
+      raw_key="$(echo "$user_key_response" | jq -r \".[$i].raw_key\")"
+
+      if [[ "$raw_key" != "null" ]]; then
+        # I don't know. GitHub gives annoying \r\n stuff and it's annoying.
+        # Did I mention it's annoying? It's annoying.
+        echo "$user_key_response" | jq -r ".[$i].raw_key" > "keys/$user-$i.pub"
+        gpg --import "keys/$user-$i.pub"
+      fi
+    done
   done
 done
